@@ -1,5 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import {
   ScrollView,
   StyleSheet,
@@ -7,13 +7,13 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { Card, IconButton, Text } from "react-native-paper";
-import getAllNotes from "../../database/getAllnotes";
-import { useNoteStore } from "../../store/store";
+import { BSON } from "realm";
+import useDatabase from "../../database";
 
 export interface INoteData {
   title: string;
   text: string;
-  id: number;
+  _id: BSON.ObjectId;
 }
 
 const CardItem = ({ noteData }: { noteData: INoteData }) => {
@@ -26,7 +26,7 @@ const CardItem = ({ noteData }: { noteData: INoteData }) => {
     <Card
       style={styles.card}
       onPress={() => {
-        navivation.navigate("Note", { noteId: noteData.id });
+        navivation.navigate("Note", { noteId: noteData._id.toHexString() });
       }}
     >
       <Card.Content style={{ paddingBottom: 5 }}>
@@ -57,30 +57,24 @@ const CardItem = ({ noteData }: { noteData: INoteData }) => {
 const NotesList = () => {
   const [open, setOpen] = useState(false);
   const windowWidth = useWindowDimensions().width;
-  const { notes: cardsData } = useNoteStore();
-  const allRealmNotes = getAllNotes();
-  alert("LENGTH: " + allRealmNotes.length);
-  alert(allRealmNotes[0].title);
-  alert(allRealmNotes[0].text);
+  const { getAllNotes } = useDatabase();
+  const cardsData = getAllNotes();
+  console.log("render");
 
-  const arrs = useMemo(() => {
-    const n_rows = Math.floor(windowWidth / 150);
-    const arrs: Array<JSX.Element[]> = new Array(n_rows)
-      .fill(null)
-      .map((_) => []);
+  const n_rows = Math.floor(windowWidth / 150);
+  const arrs: Array<JSX.Element[]> = new Array(n_rows)
+    .fill(null)
+    .map((_) => []);
 
-    let tmp = 0;
-    for (let i = 0; i < cardsData.length; i++) {
-      console.log(i, tmp);
-      arrs[tmp].push(<CardItem key={i} noteData={cardsData[i]} />);
-      if (tmp === n_rows - 1) {
-        tmp = 0;
-      } else {
-        tmp += 1;
-      }
+  let tmp = 0;
+  for (let i = 0; i < cardsData.length; i++) {
+    arrs[tmp].push(<CardItem key={i} noteData={cardsData[i]} />);
+    if (tmp === n_rows - 1) {
+      tmp = 0;
+    } else {
+      tmp += 1;
     }
-    return arrs;
-  }, [cardsData, windowWidth]);
+  }
 
   return (
     <ScrollView style={{ flex: 1 }}>

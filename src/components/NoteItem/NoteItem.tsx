@@ -1,26 +1,36 @@
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { observer } from "mobx-react";
-import { useState } from "react";
+import { useNavigation } from "@react-navigation/native";
+import { useEffect, useState } from "react";
 import { View } from "react-native";
-import { Appbar, Portal, Text, TextInput } from "react-native-paper";
-import { useNoteStore } from "../../store/store";
+import { Appbar, Portal, Snackbar, Text, TextInput } from "react-native-paper";
+import { BSON } from "realm";
+import useDatabase, { Note } from "../../database";
+import useDebouncer from "../../hooks/useDebouncer";
 
 export interface INoteitemProps {
-  noteId: string;
+  note: Note | null;
 }
 
-const NoteItem = observer(({ noteId }: { noteId: number }) => {
-  const [fabOpen, setFabOpen] = useState(true);
-  const { getNote, updateNote, deleteNote } = useNoteStore();
-  const note = getNote(noteId);
+const NoteItem = ({ note }: INoteitemProps) => {
+  // console.log("render");
+
+  const { updateNote, deleteNote } = useDatabase();
+  const [snacVisible, setSnackVisible] = useState(false);
+
   if (!note) return <></>;
   const [title, setTitle] = useState(note.title);
   const [text, setText] = useState(note.text);
   const navigator = useNavigation();
 
-  const saveNote = () => {
-    updateNote({ id: noteId, text: text, title: title });
-  };
+  const saveNote = useDebouncer(
+    (new_note: { _id: BSON.ObjectId; text: string; title: string }) => {
+      console.log(new_note);
+      updateNote(
+        { _id: new_note._id, text: new_note.text, title: new_note.title },
+        note
+      );
+    },
+    300
+  );
 
   const handleTitleChange = (title: string) => {
     setTitle(title);
@@ -30,11 +40,12 @@ const NoteItem = observer(({ noteId }: { noteId: number }) => {
     setText(text);
   };
 
-  useFocusEffect(() => {
+  useEffect(() => {
+    saveNote({ _id: note._id, text, title });
     return () => {
-      saveNote();
+      saveNote({ _id: note._id, text, title });
     };
-  });
+  }, [text, title]);
 
   const CardInfo = (
     <Text
@@ -59,15 +70,26 @@ const NoteItem = observer(({ noteId }: { noteId: number }) => {
           }}
         />
         <Appbar.Content title />
-        <Appbar.Action icon={"undo"} />
-        <Appbar.Action icon={"redo"} />
         <Appbar.Action icon={"image-edit-outline"} />
         <Appbar.Action icon={"share-variant-outline"} disabled />
         <Appbar.Action
           icon={"delete-outline"}
           onPress={() => {
-            deleteNote(noteId);
+            console.log("deleting...");
+            deleteNote(note);
+            console.log("deleted :v:");
+            console.log(note);
             navigator.navigate("Home" as never);
+          }}
+        />
+        <Appbar.Action
+          icon={"content-save-outline"}
+          onPress={() => {
+            saveNote({ _id: note._id, text, title });
+            setSnackVisible(true);
+            setTimeout(() => {
+              setSnackVisible(false);
+            }, 3000);
           }}
         />
         <Appbar.Action icon={"menu"} />
@@ -101,10 +123,25 @@ const NoteItem = observer(({ noteId }: { noteId: number }) => {
           selectionColor={"#858585"}
           placeholderTextColor={"#858595"}
         />
-        <Portal>{CardInfo}</Portal>
+        <Portal>
+          {CardInfo}
+
+          <Snackbar
+            visible={snacVisible}
+            onDismiss={() => {
+              setSnackVisible(false);
+            }}
+            icon={"window-close"}
+            onIconPress={() => {
+              setSnackVisible(false);
+            }}
+          >
+            Saved
+          </Snackbar>
+        </Portal>
       </View>
     </>
   );
-});
+};
 
 export default NoteItem;

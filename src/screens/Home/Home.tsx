@@ -5,13 +5,14 @@ import { StyleSheet } from "react-native";
 import { FAB, Portal } from "react-native-paper";
 import Header from "../../components/Header/Header";
 import NotesList from "../../components/NotesList/NotesList";
-import createNote from "../../database/createNote";
-import { useNoteStore } from "../../store/store";
+import useDatabase, { realmContext } from "../../database";
 
 const App = observer(() => {
   const [fabVisible, setFabVisible] = useState(true);
   const navigator = useNavigation();
-  const notestore = useNoteStore();
+  const { useRealm } = realmContext;
+  const realm = useRealm();
+  const { createNote } = useDatabase();
 
   useFocusEffect(
     useCallback(() => {
@@ -34,8 +35,9 @@ const App = observer(() => {
           variant="primary"
           onPress={() => {
             setFabVisible(false);
-            createNote({ text: "REALM NOTE", title: "REALM" });
-            navigator.navigate("Note", { noteId: notestore.createNote() });
+            const new_note = createNote({ text: "text", title: "new realm " });
+            console.log(new_note);
+            navigator.navigate("Note", { noteId: new_note._id });
           }}
         />
       </Portal>

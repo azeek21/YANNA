@@ -14,6 +14,7 @@
     "@realm/react": "^0.4.3",
     "@types/react": "~18.0.27",
     "expo": "~48.0.15",
+    "expo-dev-client": "~2.2.1",
     "expo-status-bar": "~1.4.4",
     "mobx": "^6.9.0",
     "mobx-react": "^7.6.0",
