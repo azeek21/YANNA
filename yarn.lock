@@ -1521,6 +1521,11 @@
     "@jridgewell/resolve-uri" "3.1.0"
     "@jridgewell/sourcemap-codec" "1.4.14"
 
+"@mr96/use-timeline@^1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@mr96/use-timeline/-/use-timeline-1.4.0.tgz#93f52fa37034e633b43a2b8633f9186fc146aff0"
+  integrity sha512-vB8PWLo3EVqHn/9krr0fKAR6H5W+DTp8aS5bX//UArYCqZ48penRksv9YlQy+RrRWkQgAYznWvpFhpkxXr7M0A==
+
 "@nodelib/fs.scandir@2.1.5":
   version "2.1.5"
   resolved "https://registry.yarnpkg.com/@nodelib/fs.scandir/-/fs.scandir-2.1.5.tgz#7619c2eb21b25483f6d167548b4cfd5a7488c3d5"

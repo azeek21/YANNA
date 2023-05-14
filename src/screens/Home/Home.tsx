@@ -3,16 +3,28 @@ import { observer } from "mobx-react";
 import { useCallback, useState } from "react";
 import { StyleSheet } from "react-native";
 import { FAB, Portal } from "react-native-paper";
+import { BSON } from "realm";
 import Header from "../../components/Header/Header";
 import NotesList from "../../components/NotesList/NotesList";
-import useDatabase, { realmContext } from "../../database";
+import { Note, realmContext } from "../../database";
+
+const { useRealm } = realmContext;
 
 const App = observer(() => {
   const [fabVisible, setFabVisible] = useState(true);
   const navigator = useNavigation();
   const { useRealm } = realmContext;
   const realm = useRealm();
-  const { createNote } = useDatabase();
+
+  const createNote = () => {
+    return realm.write(() => {
+      return realm.create<Note>("Note", {
+        title: "",
+        text: "",
+        _id: new BSON.ObjectId(),
+      });
+    });
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -35,9 +47,9 @@ const App = observer(() => {
           variant="primary"
           onPress={() => {
             setFabVisible(false);
-            const new_note = createNote({ text: "text", title: "new realm " });
-            console.log(new_note);
-            navigator.navigate("Note", { noteId: new_note._id });
+            navigator.navigate("Note", {
+              noteId: createNote()._id.toHexString(),
+            });
           }}
         />
       </Portal>

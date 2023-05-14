@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@mr96/use-timeline": "^1.4.0",
     "@react-navigation/native": "^6.1.6",
     "@react-navigation/native-stack": "^6.9.12",
     "@realm/react": "^0.4.3",

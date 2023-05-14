@@ -8,17 +8,16 @@ import {
 } from "react-native";
 import { Card, IconButton, Text } from "react-native-paper";
 import { BSON } from "realm";
-import useDatabase from "../../database";
-
+import { Note, realmContext } from "../../database";
+const { useRealm, useObject } = realmContext;
 export interface INoteData {
-  title: string;
-  text: string;
-  _id: BSON.ObjectId;
+  _id: string;
 }
 
 const CardItem = ({ noteData }: { noteData: INoteData }) => {
-  const text = noteData.text;
-  const title = noteData.title ? noteData.title : noteData.text.slice(0, 15);
+  const note = useObject(Note, new BSON.ObjectId(noteData._id))!;
+  const text = note.text;
+  const title = note.title ? note.title : note.text.slice(0, 15);
   const updated = text.length > 60 ? text.slice(0, 60) + "..." : text;
   const navivation = useNavigation();
 
@@ -26,7 +25,7 @@ const CardItem = ({ noteData }: { noteData: INoteData }) => {
     <Card
       style={styles.card}
       onPress={() => {
-        navivation.navigate("Note", { noteId: noteData._id.toHexString() });
+        navivation.navigate("Note", { noteId: note._id.toHexString() });
       }}
     >
       <Card.Content style={{ paddingBottom: 5 }}>
@@ -57,9 +56,9 @@ const CardItem = ({ noteData }: { noteData: INoteData }) => {
 const NotesList = () => {
   const [open, setOpen] = useState(false);
   const windowWidth = useWindowDimensions().width;
-  const { getAllNotes } = useDatabase();
-  const cardsData = getAllNotes();
-  console.log("render");
+  const realm = useRealm();
+  const cardsData = realm.objects(Note);
+  console.log("list render");
 
   const n_rows = Math.floor(windowWidth / 150);
   const arrs: Array<JSX.Element[]> = new Array(n_rows)
@@ -68,7 +67,9 @@ const NotesList = () => {
 
   let tmp = 0;
   for (let i = 0; i < cardsData.length; i++) {
-    arrs[tmp].push(<CardItem key={i} noteData={cardsData[i]} />);
+    arrs[tmp].push(
+      <CardItem key={i} noteData={{ _id: cardsData[i]._id.toHexString() }} />
+    );
     if (tmp === n_rows - 1) {
       tmp = 0;
     } else {

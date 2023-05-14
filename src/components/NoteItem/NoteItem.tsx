@@ -1,37 +1,37 @@
+import { UndoableState } from "@mr96/use-timeline";
 import { useNavigation } from "@react-navigation/native";
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 import { Appbar, Portal, Snackbar, Text, TextInput } from "react-native-paper";
 import { BSON } from "realm";
-import useDatabase, { Note } from "../../database";
-import useDebouncer from "../../hooks/useDebouncer";
+import { Note } from "../../database";
 
 export interface INoteitemProps {
-  note: Note | null;
+  data: {
+    currentHistory: { text: string; title: string };
+    setHistory: React.Dispatch<
+      React.SetStateAction<{ text: string; title: string }>
+    >;
+    undo: () => void;
+    redo: () => void;
+    internal: UndoableState<{ text: string; title: string }>;
+    canUndo: boolean;
+    canRedo: boolean;
+    _id: BSON.ObjectId;
+    note: Note;
+    saveNote: ({ text, title }: { text: string; title: string }) => void;
+    deleteNote: () => void;
+  };
 }
 
-const NoteItem = ({ note }: INoteitemProps) => {
-  // console.log("render");
-
-  const { updateNote, deleteNote } = useDatabase();
+const NoteItem = ({ data }: INoteitemProps) => {
   const [snacVisible, setSnackVisible] = useState(false);
-
-  if (!note) return <></>;
-  const [title, setTitle] = useState(note.title);
-  const [text, setText] = useState(note.text);
+  const note = useMemo(() => {
+    return data.note;
+  }, []);
+  const [text, setText] = useState(data.note.text);
+  const [title, setTitle] = useState(data.note.title);
   const navigator = useNavigation();
-
-  const saveNote = useDebouncer(
-    (new_note: { _id: BSON.ObjectId; text: string; title: string }) => {
-      console.log(new_note);
-      updateNote(
-        { _id: new_note._id, text: new_note.text, title: new_note.title },
-        note
-      );
-    },
-    300
-  );
-
   const handleTitleChange = (title: string) => {
     setTitle(title);
   };
@@ -41,10 +41,13 @@ const NoteItem = ({ note }: INoteitemProps) => {
   };
 
   useEffect(() => {
-    saveNote({ _id: note._id, text, title });
-    return () => {
-      saveNote({ _id: note._id, text, title });
-    };
+    data.saveNote({ text: text, title: title });
+    if (
+      data.internal.timeline[data.internal.index].text != text ||
+      data.internal.timeline[data.internal.index].title != title
+    ) {
+      data.setHistory({ title: title, text: text });
+    }
   }, [text, title]);
 
   const CardInfo = (
@@ -70,23 +73,42 @@ const NoteItem = ({ note }: INoteitemProps) => {
           }}
         />
         <Appbar.Content title />
-        <Appbar.Action icon={"image-edit-outline"} />
-        <Appbar.Action icon={"share-variant-outline"} disabled />
+        <Appbar.Action
+          icon={"undo"}
+          disabled={!data.canUndo}
+          onPress={() => {
+            setText(data.internal.timeline[data.internal.index - 1].text);
+            setTitle(data.internal.timeline[data.internal.index - 1].title);
+            data.undo();
+          }}
+        />
+        <Appbar.Action
+          icon={"redo"}
+          disabled={!data.canRedo}
+          onPress={() => {
+            setText(data.internal.timeline[data.internal.index + 1].text);
+            setTitle(data.internal.timeline[data.internal.index + 1].title);
+            data.redo();
+          }}
+        />
+        <Appbar.Action
+          icon={"share-variant-outline"}
+          onPress={() => {
+            // data.saveNote.discard();
+          }}
+        />
         <Appbar.Action
           icon={"delete-outline"}
           onPress={() => {
-            console.log("deleting...");
-            deleteNote(note);
-            console.log("deleted :v:");
-            console.log(note);
+            data.deleteNote();
             navigator.navigate("Home" as never);
           }}
         />
         <Appbar.Action
           icon={"content-save-outline"}
           onPress={() => {
-            saveNote({ _id: note._id, text, title });
             setSnackVisible(true);
+            data.setHistory({ text, title });
             setTimeout(() => {
               setSnackVisible(false);
             }, 3000);
@@ -125,7 +147,7 @@ const NoteItem = ({ note }: INoteitemProps) => {
         />
         <Portal>
           {CardInfo}
-
+          <Text>{data._id.toHexString()}</Text>
           <Snackbar
             visible={snacVisible}
             onDismiss={() => {

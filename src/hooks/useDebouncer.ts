@@ -1,17 +1,15 @@
-function useDebouncer(
-  callback: (...args: unknown[]) => unknown,
-  delay: number
-): (...args: unknown[]) => void {
+import { useCallback } from "react";
+
+function useDebouncer(callback, delay: number) {
   let timeoutId: undefined | NodeJS.Timeout;
-  if (!this.debounced) {
-    this.debounced = function debounced(...args: unknown[]) {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(() => {
-        callback(...arguments);
-      }, delay);
-    };
-  }
-  return this.debounced;
+  const debounced = useCallback(function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      callback(...args);
+    }, delay);
+  }, []);
+
+  return debounced;
 }
 
 export default useDebouncer;
